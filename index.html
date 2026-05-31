@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Agendamentos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #f4f2ed;
+  --surface: #ffffff;
+  --surface2: #eeece7;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #1c1a17;
+  --text2: #6a6760;
+  --text3: #a09d97;
+  --accent: #1849c6;
+  --accent-bg: #e8eefb;
+  --accent-text: #102d8a;
+  --green: #0e7a54;
+  --green-bg: #e0f5ec;
+  --green-text: #0b5e40;
+  --amber: #b86e0a;
+  --amber-bg: #fef3e0;
+  --amber-text: #8a4e04;
+  --r: 10px;
+  --rl: 14px;
+  --shadow: 0 1px 2px rgba(0,0,0,0.06), 0 3px 12px rgba(0,0,0,0.05);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; color: var(--text); }
+.logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.logo-icon svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.db-pill { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--green); background: var(--green-bg); padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 5px; }
+.db-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+/* ── TABS ── */
+.tabs { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 28px; display: flex; }
+.tab { font-size: 13px; font-weight: 500; padding: 11px 16px; cursor: pointer; color: var(--text2); border: none; background: none; border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: 6px; transition: color .15s; }
+.tab svg { width: 15px; height: 15px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── LAYOUT ── */
+.main { max-width: 1140px; margin: 0 auto; padding: 26px 22px 60px; }
+
+/* ── STATS ── */
+.stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 22px; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; box-shadow: var(--shadow); }
+.stat-label { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 7px; }
+.stat-val { font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* ── TOOLBAR ── */
+.toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 12px; flex: 1; min-width: 180px; transition: border-color .15s; }
+.search:focus-within { border-color: var(--accent); }
+.search svg { width: 16px; height: 16px; stroke: var(--text3); stroke-width: 2; fill: none; flex-shrink: 0; }
+.search input { background: transparent; border: none; outline: none; font-size: 13px; color: var(--text); font-family: 'DM Sans', sans-serif; width: 100%; }
+.search input::placeholder { color: var(--text3); }
+select { font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text2); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 10px; background: var(--surface); cursor: pointer; }
+
+/* ── TABLE ── */
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl); overflow: hidden; box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { text-align: left; font-size: 10.5px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; cursor: pointer; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+tbody td { padding: 10px 14px; vertical-align: middle; }
+
+/* ── BADGES ── */
+.badge { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+.badge-exame { background: var(--accent-bg); color: var(--accent-text); }
+.badge-consulta { background: var(--green-bg); color: var(--green-text); }
+.badge-ok { background: var(--green-bg); color: var(--green-text); }
+
+/* ── PROGRESS BAR ── */
+.bar-wrap { width: 100%; height: 3px; background: var(--surface2); border-radius: 3px; margin-top: 5px; }
+.bar-fill { height: 3px; background: var(--accent); border-radius: 3px; }
+
+/* ── PAGINATION ── */
+.pag-wrap { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; font-size: 12px; color: var(--text3); flex-wrap: wrap; gap: 8px; }
+.pag-btns { display: flex; gap: 4px; }
+.pag-btns button { border: 1px solid var(--border); border-radius: 7px; padding: 4px 10px; background: var(--surface); cursor: pointer; font-size: 12px; font-family: 'DM Sans', sans-serif; color: var(--text); transition: background .1s; }
+.pag-btns button:hover:not(:disabled) { background: var(--surface2); }
+.pag-btns button:disabled { opacity: .35; cursor: default; }
+.pag-btns button.active-pg { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* ── CHART ── */
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl); padding: 18px 20px; margin-bottom: 18px; box-shadow: var(--shadow); }
+.chart-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
+.chart-wrap { position: relative; width: 100%; height: 230px; }
+.legend { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: var(--text2); }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.ldot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+/* ── DAY CARDS ── */
+.day-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl); margin-bottom: 9px; overflow: hidden; box-shadow: var(--shadow); }
+.day-hdr { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; cursor: pointer; transition: background .1s; }
+.day-hdr:hover { background: var(--surface2); }
+.day-title { font-size: 14px; font-weight: 600; }
+.day-date-s { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; margin-left: 8px; font-weight: 400; }
+.day-meta { display: flex; gap: 6px; align-items: center; }
+.pill { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
+.pill-t { background: var(--surface2); color: var(--text2); }
+.pill-e { background: var(--accent-bg); color: var(--accent-text); }
+.pill-c { background: var(--green-bg); color: var(--green-text); }
+.chevron { font-size: 15px; color: var(--text3); transition: transform .2s; display: inline-block; }
+.chevron.open { transform: rotate(180deg); }
+.day-body { display: none; }
+.day-body.open { display: block; }
+.item-row { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-top: 1px solid var(--border); font-size: 12px; transition: background .1s; cursor: pointer; }
+.item-row:hover { background: var(--surface2); }
+.item-hora { font-size: 11px; font-weight: 500; color: var(--text3); font-family: 'DM Mono', monospace; min-width: 40px; }
+.item-recurso { flex: 1; color: var(--text); }
+.item-paciente { font-size: 11px; color: var(--text3); min-width: 160px; text-align: right; }
+
+/* ── MODAL ── */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.32); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+.modal-bg.hidden { display: none; }
+.modal { background: var(--surface); border-radius: var(--rl); padding: 24px 26px; max-width: 540px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,.18); }
+.modal-hdr { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+.modal-title { font-size: 15px; font-weight: 600; }
+.modal-close { border: none; background: none; cursor: pointer; color: var(--text3); font-size: 20px; line-height: 1; }
+.modal-close:hover { color: var(--text); }
+.modal-row { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 10px; }
+.modal-lbl { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; min-width: 120px; padding-top: 2px; }
+.modal-val { font-size: 13px; color: var(--text); flex: 1; }
+
+/* ── LOADING / EMPTY ── */
+.loading { text-align: center; padding: 36px 20px; color: var(--text3); font-size: 13px; }
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; margin-bottom: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty { text-align: center; padding: 36px 20px; color: var(--text3); font-size: 13px; }
+
+/* ── API INFO ── */
+.api-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl); overflow: hidden; box-shadow: var(--shadow); }
+.api-row { padding: 13px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 12px; }
+.api-row:last-child { border-bottom: none; }
+.api-method { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; background: var(--green-bg); color: var(--green-text); font-family: 'DM Mono', monospace; }
+.api-path { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--accent); font-weight: 500; }
+.api-desc { font-size: 12px; color: var(--text2); margin-top: 3px; }
+.code-block { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text2); line-height: 1.7; overflow-x: auto; margin-top: 6px; }
+.code-kw { color: var(--accent); }
+.code-str { color: var(--green); }
+.code-val { color: var(--amber); }
+
+/* ── DIST BAR ── */
+.dist-bar { display: flex; height: 5px; border-radius: 4px; overflow: hidden; gap: 1px; }
+.dist-e { background: var(--accent); }
+.dist-c { background: var(--green); }
+
+@media (max-width: 768px) {
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .header, .tabs { padding: 0 14px; }
+  .main { padding: 14px 10px 40px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    Painel de Agendamentos
+  </div>
+  <div class="db-pill">
+    <div class="db-dot"></div>
+    Supabase · ao vivo
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="dashboard" onclick="switchTab(this)">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </button>
+  <button class="tab" data-tab="recursos" onclick="switchTab(this)">
+    <svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+    Recursos
+  </button>
+  <button class="tab" data-tab="agendamentos" onclick="switchTab(this)">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Agendamentos
+  </button>
+  <button class="tab" data-tab="pordata" onclick="switchTab(this)">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/></svg>
+    Por data
+  </button>
+  <button class="tab" data-tab="api" onclick="switchTab(this)">
+    <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    API
+  </button>
+</div>
+
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard">
+    <div class="stats" id="stats-res">
+      <div class="stat"><div class="stat-label">Carregando</div><div class="stat-val">—</div></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-label">Agendamentos por dia</div>
+      <div class="chart-wrap"><canvas id="chart-dia"></canvas></div>
+      <div class="legend">
+        <span><span class="ldot" style="background:var(--accent)"></span>Exames</span>
+        <span><span class="ldot" style="background:var(--green)"></span>Consultas</span>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-label">Top 10 recursos mais agendados</div>
+      <div class="chart-wrap" style="height:260px"><canvas id="chart-top"></canvas></div>
+    </div>
+  </div>
+
+  <!-- RECURSOS -->
+  <div id="tab-recursos" style="display:none">
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="rec-q" type="text" placeholder="Pesquisar recurso...">
+      </div>
+      <select id="rec-tipo"><option value="">Todos os tipos</option><option value="EXAME">Exame</option><option value="CONSULTA">Consulta</option></select>
+      <select id="rec-ordem"><option value="quantidade">Maior quantidade</option><option value="az">A → Z</option><option value="za">Z → A</option></select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Recurso</th><th>Tipo</th><th style="text-align:center">Qtd</th><th>Primeiro</th><th>Último</th></tr></thead>
+        <tbody id="rec-body"></tbody>
+      </table>
+      <div id="rec-loading" class="loading"><div class="spinner"></div><br>Carregando...</div>
+      <div id="rec-empty" class="empty" style="display:none">Nenhum resultado encontrado</div>
+    </div>
+    <div class="pag-wrap"><span id="rec-info"></span><div class="pag-btns" id="rec-pag"></div></div>
+  </div>
+
+  <!-- AGENDAMENTOS -->
+  <div id="tab-agendamentos" style="display:none">
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="ag-q" type="text" placeholder="Recurso, paciente ou CID...">
+      </div>
+      <select id="ag-tipo"><option value="">Todos os tipos</option><option value="EXAME">Exame</option><option value="CONSULTA">Consulta</option></select>
+      <select id="ag-data"><option value="">Todas as datas</option></select>
+      <select id="ag-ordem"><option value="agendado_para">Por horário</option><option value="recurso">Por recurso</option><option value="paciente">Por paciente</option></select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Data / Hora</th><th>Tipo</th><th>Recurso</th><th>Paciente</th><th>CID</th><th>Situação</th></tr></thead>
+        <tbody id="ag-body"></tbody>
+      </table>
+      <div id="ag-loading" class="loading"><div class="spinner"></div><br>Carregando...</div>
+      <div id="ag-empty" class="empty" style="display:none">Nenhum resultado encontrado</div>
+    </div>
+    <div class="pag-wrap"><span id="ag-info"></span><div class="pag-btns" id="ag-pag"></div></div>
+  </div>
+
+  <!-- POR DATA -->
+  <div id="tab-pordata" style="display:none">
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="dt-q" type="text" placeholder="Pesquisar recurso ou paciente...">
+      </div>
+      <select id="dt-tipo"><option value="">Todos os tipos</option><option value="EXAME">Exame</option><option value="CONSULTA">Consulta</option></select>
+    </div>
+    <div id="days-list"><div class="loading"><div class="spinner"></div><br>Carregando...</div></div>
+  </div>
+
+  <!-- API -->
+  <div id="tab-api" style="display:none">
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      Este painel consome a API REST do <strong>Supabase</strong> diretamente do navegador, sem servidor intermediário.<br>
+      Base URL: <code style="font-family:'DM Mono',monospace;font-size:11px;background:var(--surface2);padding:2px 7px;border-radius:5px">https://jgogllanxbvccyufcauo.supabase.co</code>
+    </p>
+    <div class="api-card">
+      <div class="api-row"><span class="api-method">GET</span><div><div class="api-path">/rest/v1/v_resumo?select=*</div><div class="api-desc">Totais gerais: agendamentos, exames, consultas, recursos, dias.</div></div></div>
+      <div class="api-row"><span class="api-method">GET</span><div><div class="api-path">/rest/v1/v_por_recurso?select=*&order=quantidade.desc</div><div class="api-desc">Recursos agrupados com contagem e datas extremas.</div></div></div>
+      <div class="api-row"><span class="api-method">GET</span><div><div class="api-path">/rest/v1/v_por_data?select=*</div><div class="api-desc">Quantitativo por data: total, exames e consultas.</div></div></div>
+      <div class="api-row"><span class="api-method">GET</span><div><div class="api-path">/rest/v1/agendamentos?select=*&order=agendado_para</div><div class="api-desc">Lista completa de agendamentos com filtros e paginação.</div></div></div>
+      <div class="api-row"><span class="api-method">POST</span><div><div class="api-path">/rest/v1/rpc/buscar_agendamentos</div><div class="api-desc">Busca fulltext em recurso, paciente e CID.</div></div></div>
+      <div class="api-row"><span class="api-method">POST</span><div><div class="api-path">/rest/v1/rpc/agendamentos_por_data</div><div class="api-desc">Todos os agendamentos de uma data específica ordenados por hora.</div></div></div>
+    </div>
+
+    <div style="margin-top:18px;background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;box-shadow:var(--shadow)">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Testar endpoint</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="search" style="flex:1">
+          <svg viewBox="0 0 24 24" style="width:16px;height:16px;stroke:var(--text3);stroke-width:2;fill:none"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          <input id="api-url" type="text" value="/rest/v1/v_resumo?select=*">
+        </div>
+        <button onclick="testApi()" style="font-family:'DM Sans',sans-serif;font-size:13px;background:var(--accent);color:#fff;border:none;border-radius:var(--r);padding:8px 16px;cursor:pointer;font-weight:500">Executar</button>
+      </div>
+      <pre id="api-out" style="margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px;font-family:'DM Mono',monospace;font-size:11px;overflow-x:auto;max-height:300px;overflow-y:auto;color:var(--text);white-space:pre-wrap;line-height:1.6"></pre>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg hidden" id="modal-bg" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="modal-title">Detalhe</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const SUPA_URL = 'https://jgogllanxbvccyufcauo.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Impnb2dsbGFueGJ2Y2N5dWZjYXVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTE3NzIsImV4cCI6MjA5NTcyNzc3Mn0.DswSYxlwQHxNDK0WbKao-nsodC70gGlCStdeLmCZiqA';
+
+const HEADERS = {
+  'apikey': SUPA_KEY,
+  'Authorization': 'Bearer ' + SUPA_KEY,
+  'Content-Type': 'application/json'
+};
+
+async function supa(path, opts = {}) {
+  const r = await fetch(SUPA_URL + path, { headers: HEADERS, ...opts });
+  return r.json();
+}
+
+async function supaRpc(fn, body = {}) {
+  const r = await fetch(SUPA_URL + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: { ...HEADERS, 'Prefer': 'return=representation' },
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+// ── helpers ───────────────────────────────────────────────────────
+function fmtDT(s) {
+  if (!s) return '—';
+  const d = new Date(s);
+  return d.toLocaleDateString('pt-BR') + ' ' + d.toTimeString().slice(0,5);
+}
+function fmtDate(s) {
+  if (!s) return '—';
+  const [y, m, d] = s.split('-');
+  const dt = new Date(+y, +m-1, +d);
+  return ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][dt.getDay()] + `, ${d}/${m}/${y}`;
+}
+
+// ── tabs ──────────────────────────────────────────────────────────
+const TABS = ['dashboard','recursos','agendamentos','pordata','api'];
+const inited = {};
+
+function switchTab(btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const t = btn.dataset.tab;
+  TABS.forEach(id => document.getElementById('tab-' + id).style.display = id === t ? '' : 'none');
+  if (!inited[t]) { inited[t] = true; initTab(t); }
+}
+
+function initTab(t) {
+  if (t === 'dashboard')    loadDashboard();
+  if (t === 'recursos')     loadRecursos();
+  if (t === 'agendamentos') { populateDatas(); loadAgendamentos(); }
+  if (t === 'pordata')      loadPorData();
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────
+let cD = null, cT = null;
+
+async function loadDashboard() {
+  const [res, porData, top10] = await Promise.all([
+    supa('/rest/v1/v_resumo?select=*'),
+    supa('/rest/v1/v_por_data?select=*&order=data.asc'),
+    supa('/rest/v1/v_por_recurso?select=*&order=quantidade.desc&limit=10')
+  ]);
+
+  const r = Array.isArray(res) ? res[0] : res;
+  document.getElementById('stats-res').innerHTML = `
+    <div class="stat"><div class="stat-label">Total</div><div class="stat-val">${r.total}</div><div class="stat-sub">agendamentos</div></div>
+    <div class="stat"><div class="stat-label">Exames</div><div class="stat-val">${r.exames}</div><div class="stat-sub">${Math.round(r.exames/r.total*100)}% do total</div></div>
+    <div class="stat"><div class="stat-label">Consultas</div><div class="stat-val">${r.consultas}</div><div class="stat-sub">${Math.round(r.consultas/r.total*100)}% do total</div></div>
+    <div class="stat"><div class="stat-label">Recursos</div><div class="stat-val">${r.recursos_distintos}</div><div class="stat-sub">distintos</div></div>
+    <div class="stat"><div class="stat-label">Dias</div><div class="stat-val">${r.dias_com_agendamento}</div><div class="stat-sub">com agenda</div></div>`;
+
+  if (cD) cD.destroy();
+  cD = new Chart(document.getElementById('chart-dia'), {
+    type: 'bar',
+    data: {
+      labels: porData.map(d => d.data.slice(5).split('-').reverse().join('/')),
+      datasets: [
+        { label:'Exames', data: porData.map(d => d.exames), backgroundColor: '#1849c6', borderRadius: 4, borderSkipped: false },
+        { label:'Consultas', data: porData.map(d => d.consultas), backgroundColor: '#0e7a54', borderRadius: 4, borderSkipped: false }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{footer: i => 'Total: '+i.reduce((s,x)=>s+x.raw,0)}} }, scales:{ x:{stacked:true,grid:{display:false},ticks:{color:'#a09d97',font:{size:11},autoSkip:false}}, y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#a09d97',font:{size:11}}} } }
+  });
+
+  if (cT) cT.destroy();
+  cT = new Chart(document.getElementById('chart-top'), {
+    type: 'bar',
+    data: {
+      labels: top10.map(r => r.recurso.length > 40 ? r.recurso.slice(0,40)+'…' : r.recurso),
+      datasets: [{ data: top10.map(r => r.quantidade), backgroundColor: top10.map(r => r.tipo==='EXAME'?'#1849c6':'#0e7a54'), borderRadius: 4 }]
+    },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{color:'#a09d97',font:{size:11}}}, y:{grid:{display:false},ticks:{color:'#1c1a17',font:{size:11}}} } }
+  });
+}
+
+// ── RECURSOS ────────────────────────────────────────────────────
+let recPg = 1;
+const REC_LIM = 20;
+
+async function loadRecursos(pg = 1) {
+  recPg = pg;
+  document.getElementById('rec-body').innerHTML = '';
+  document.getElementById('rec-loading').style.display = 'block';
+  document.getElementById('rec-empty').style.display = 'none';
+
+  const q     = document.getElementById('rec-q').value;
+  const tipo  = document.getElementById('rec-tipo').value;
+  const ordem = document.getElementById('rec-ordem').value;
+
+  let url = `/rest/v1/v_por_recurso?select=*`;
+  if (tipo)  url += `&tipo=eq.${tipo}`;
+  if (q)     url += `&recurso=ilike.*${encodeURIComponent(q)}*`;
+  url += ordem === 'az' ? '&order=recurso.asc' : ordem === 'za' ? '&order=recurso.desc' : '&order=quantidade.desc';
+  url += `&limit=${REC_LIM}&offset=${(pg-1)*REC_LIM}`;
+
+  const total_url = `/rest/v1/v_por_recurso?select=count${tipo?`&tipo=eq.${tipo}`:''}${q?`&recurso=ilike.*${encodeURIComponent(q)}*`:''}`;
+  const [data, cnt] = await Promise.all([
+    supa(url),
+    fetch(SUPA_URL + total_url, { headers: { ...HEADERS, 'Prefer': 'count=exact', 'Range': '0-0' } }).then(r => parseInt(r.headers.get('content-range')?.split('/')[1] || '0'))
+  ]);
+
+  document.getElementById('rec-loading').style.display = 'none';
+  if (!data.length) { document.getElementById('rec-empty').style.display = 'block'; return; }
+
+  const maxQ = Math.max(...data.map(r => r.quantidade));
+  document.getElementById('rec-body').innerHTML = data.map(r => `
+    <tr onclick="showRecurso('${encodeURIComponent(r.recurso)}','${r.tipo}','${r.quantidade}')">
+      <td style="font-weight:500;max-width:300px">${r.recurso}</td>
+      <td><span class="badge ${r.tipo==='EXAME'?'badge-exame':'badge-consulta'}">${r.tipo==='EXAME'?'Exame':'Consulta'}</span></td>
+      <td style="text-align:center;font-weight:600">${r.quantidade}
+        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(r.quantidade/maxQ*100)}%"></div></div>
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">${r.primeiro_agendamento?r.primeiro_agendamento.slice(0,10).split('-').reverse().join('/'):'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3)">${r.ultimo_agendamento?r.ultimo_agendamento.slice(0,10).split('-').reverse().join('/'):'—'}</td>
+    </tr>`).join('');
+
+  const total = cnt || data.length;
+  document.getElementById('rec-info').textContent = `${(pg-1)*REC_LIM+1}–${Math.min(pg*REC_LIM, total)} de ${total}`;
+  renderPag('rec-pag', pg, Math.ceil(total/REC_LIM), loadRecursos);
+}
+
+async function showRecurso(rec, tipo, qtd) {
+  const nome = decodeURIComponent(rec);
+  const sample = await supa(`/rest/v1/agendamentos?select=paciente,agendado_para&recurso=eq.${rec}&order=agendado_para&limit=5`);
+  openModal(nome, `
+    <div class="modal-row"><span class="modal-lbl">Tipo</span><span class="modal-val"><span class="badge ${tipo==='EXAME'?'badge-exame':'badge-consulta'}">${tipo==='EXAME'?'Exame':'Consulta'}</span></span></div>
+    <div class="modal-row"><span class="modal-lbl">Total agend.</span><span class="modal-val" style="font-size:20px;font-weight:600">${qtd}</span></div>
+    <div style="margin-top:14px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Próximos agendamentos</div>
+    ${sample.map(a=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span>${a.paciente}</span><span style="font-family:'DM Mono',monospace;color:var(--text3)">${fmtDT(a.agendado_para)}</span></div>`).join('')}
+  `);
+}
+
+// ── AGENDAMENTOS ────────────────────────────────────────────────
+let agPg = 1;
+const AG_LIM = 30;
+
+async function populateDatas() {
+  const rows = await supa('/rest/v1/agendamentos?select=agendado_para');
+  const datas = [...new Set(rows.map(r => r.agendado_para?.slice(0,10)).filter(Boolean))].sort();
+  const sel = document.getElementById('ag-data');
+  datas.forEach(d => {
+    const o = document.createElement('option');
+    o.value = d; o.textContent = d.split('-').reverse().join('/');
+    sel.appendChild(o);
+  });
+}
+
+async function loadAgendamentos(pg = 1) {
+  agPg = pg;
+  document.getElementById('ag-body').innerHTML = '';
+  document.getElementById('ag-loading').style.display = 'block';
+  document.getElementById('ag-empty').style.display = 'none';
+
+  const q     = document.getElementById('ag-q').value;
+  const tipo  = document.getElementById('ag-tipo').value;
+  const data  = document.getElementById('ag-data').value;
+  const ordem = document.getElementById('ag-ordem').value;
+
+  const body = { p_q: q, p_tipo: tipo, p_data: data || null, p_limit: AG_LIM, p_offset: (pg-1)*AG_LIM };
+  const [rows, cntRows] = await Promise.all([
+    supaRpc('buscar_agendamentos', body),
+    supaRpc('buscar_agendamentos', { ...body, p_limit: 9999, p_offset: 0 })
+  ]);
+
+  document.getElementById('ag-loading').style.display = 'none';
+  if (!rows.length) { document.getElementById('ag-empty').style.display = 'block'; return; }
+
+  document.getElementById('ag-body').innerHTML = rows.map(a => `
+    <tr onclick="showAg(${a.id})">
+      <td style="font-family:'DM Mono',monospace;font-size:11px;white-space:nowrap">${fmtDT(a.agendado_para)}</td>
+      <td><span class="badge ${a.tipo==='EXAME'?'badge-exame':'badge-consulta'}">${a.tipo==='EXAME'?'Exame':'Cons.'}</span></td>
+      <td style="max-width:220px;font-weight:500">${a.recurso}</td>
+      <td style="max-width:160px">${a.paciente}</td>
+      <td style="font-size:11px;color:var(--text3);max-width:130px">${a.cid||'—'}</td>
+      <td><span class="badge badge-ok">${a.situacao}</span></td>
+    </tr>`).join('');
+
+  const total = Array.isArray(cntRows) ? cntRows.length : 0;
+  document.getElementById('ag-info').textContent = `${(pg-1)*AG_LIM+1}–${Math.min(pg*AG_LIM, total)} de ${total}`;
+  renderPag('ag-pag', pg, Math.ceil(total/AG_LIM), loadAgendamentos);
+}
+
+async function showAg(id) {
+  const rows = await supa(`/rest/v1/agendamentos?select=*&id=eq.${id}`);
+  const a = rows[0]; if (!a) return;
+  openModal('Detalhe do agendamento', `
+    <div class="modal-row"><span class="modal-lbl">Tipo</span><span class="modal-val"><span class="badge ${a.tipo==='EXAME'?'badge-exame':'badge-consulta'}">${a.tipo}</span></span></div>
+    <div class="modal-row"><span class="modal-lbl">Recurso</span><span class="modal-val" style="font-weight:500">${a.recurso}</span></div>
+    <div class="modal-row"><span class="modal-lbl">Paciente</span><span class="modal-val">${a.paciente}</span></div>
+    <div class="modal-row"><span class="modal-lbl">Idade</span><span class="modal-val">${a.idade||'—'}</span></div>
+    <div class="modal-row"><span class="modal-lbl">CNS</span><span class="modal-val" style="font-family:'DM Mono',monospace;font-size:12px">${a.cns}</span></div>
+    <div class="modal-row"><span class="modal-lbl">CID</span><span class="modal-val">${a.cid||'—'}</span></div>
+    <div class="modal-row"><span class="modal-lbl">Agendado para</span><span class="modal-val" style="font-weight:600">${fmtDT(a.agendado_para)}</span></div>
+    <div class="modal-row"><span class="modal-lbl">Solicitado em</span><span class="modal-val">${fmtDT(a.data_solicitacao)}</span></div>
+    <div class="modal-row"><span class="modal-lbl">ID solicitação</span><span class="modal-val" style="font-family:'DM Mono',monospace;font-size:12px">${a.id_solicitacao}</span></div>
+    <div class="modal-row"><span class="modal-lbl">Situação</span><span class="modal-val"><span class="badge badge-ok">${a.situacao}</span></span></div>
+  `);
+}
+
+// ── POR DATA ────────────────────────────────────────────────────
+let allDates = [];
+
+async function loadPorData() {
+  const rows = await supa('/rest/v1/v_por_data?select=data&order=data.asc');
+  allDates = rows.map(r => r.data);
+  renderDays();
+}
+
+async function renderDays() {
+  const q  = document.getElementById('dt-q').value.toLowerCase();
+  const tp = document.getElementById('dt-tipo').value;
+  const list = document.getElementById('days-list');
+  list.innerHTML = '<div class="loading"><div class="spinner"></div><br>Carregando...</div>';
+
+  let html = '';
+  for (const [i, data] of allDates.entries()) {
+    const itens_raw = await supaRpc('agendamentos_por_data', { p_data: data });
+    const itens = (itens_raw || []).filter(it =>
+      (q ? (it.recurso.toLowerCase().includes(q) || (it.paciente||'').toLowerCase().includes(q)) : true) &&
+      (tp ? it.tipo === tp : true)
+    );
+    if (!itens.length) continue;
+    const eC = itens.filter(i => i.tipo==='EXAME').length;
+    const cC = itens.filter(i => i.tipo==='CONSULTA').length;
+    html += `<div class="day-card">
+      <div class="day-hdr" onclick="toggleDay(${i})">
+        <div><span class="day-title">${fmtDate(data)}<span class="day-date-s">${data.split('-').reverse().join('/')}</span></span></div>
+        <div class="day-meta">
+          <span class="pill pill-t">${itens.length} agend.</span>
+          ${eC?`<span class="pill pill-e">${eC} ex.</span>`:''}
+          ${cC?`<span class="pill pill-c">${cC} cons.</span>`:''}
+          <span class="chevron" id="chv${i}">▾</span>
+        </div>
+      </div>
+      <div class="day-body" id="db${i}">
+        ${itens.map(it=>`
+          <div class="item-row" onclick="showAg(${it.id})">
+            <span class="item-hora">${(it.agendado_para||'').slice(11,16)}</span>
+            <span class="badge ${it.tipo==='EXAME'?'badge-exame':'badge-consulta'}" style="min-width:52px;text-align:center">${it.tipo==='EXAME'?'Exame':'Cons.'}</span>
+            <span class="item-recurso">${it.recurso}</span>
+            <span class="item-paciente">${it.paciente||''}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+  list.innerHTML = html || '<div class="empty">Nenhum resultado encontrado</div>';
+}
+
+function toggleDay(i) {
+  const b = document.getElementById('db'+i), c = document.getElementById('chv'+i);
+  const open = b.classList.toggle('open');
+  c.classList.toggle('open', open);
+}
+
+// ── API TEST ───────────────────────────────────────────────────
+async function testApi() {
+  const url = document.getElementById('api-url').value;
+  document.getElementById('api-out').textContent = 'Carregando...';
+  try {
+    const r = await fetch(SUPA_URL + url, { headers: HEADERS });
+    const j = await r.json();
+    document.getElementById('api-out').textContent = JSON.stringify(j, null, 2);
+  } catch(e) {
+    document.getElementById('api-out').textContent = 'Erro: ' + e.message;
+  }
+}
+
+// ── PAGINATION ─────────────────────────────────────────────────
+function renderPag(id, cur, total, fn) {
+  const c = document.getElementById(id);
+  if (total <= 1) { c.innerHTML = ''; return; }
+  let html = '';
+  const btn = (p, lbl) => `<button class="${p===cur?'active-pg':''}" onclick="${fn.name}(${p})">${lbl||p}</button>`;
+  html += btn(cur-1,'‹'); html += btn(1);
+  if (cur > 3) html += '<button disabled>…</button>';
+  for (let p = Math.max(2,cur-1); p <= Math.min(total-1,cur+1); p++) html += btn(p);
+  if (cur < total-2) html += '<button disabled>…</button>';
+  if (total > 1) html += btn(total);
+  html += btn(cur+1,'›');
+  c.innerHTML = html;
+  c.querySelector(`button:first-child`).disabled = cur <= 1;
+  c.querySelector(`button:last-child`).disabled = cur >= total;
+}
+
+// ── MODAL ──────────────────────────────────────────────────────
+function openModal(title, body) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-bg').classList.remove('hidden');
+}
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal-bg'))
+    document.getElementById('modal-bg').classList.add('hidden');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── EVENTS ────────────────────────────────────────────────────
+let t1, t2, t3;
+document.getElementById('rec-q').addEventListener('input',    () => { clearTimeout(t1); t1 = setTimeout(() => loadRecursos(1), 350); });
+document.getElementById('rec-tipo').addEventListener('change', () => loadRecursos(1));
+document.getElementById('rec-ordem').addEventListener('change',() => loadRecursos(1));
+document.getElementById('ag-q').addEventListener('input',     () => { clearTimeout(t2); t2 = setTimeout(() => loadAgendamentos(1), 350); });
+document.getElementById('ag-tipo').addEventListener('change',  () => loadAgendamentos(1));
+document.getElementById('ag-data').addEventListener('change',  () => loadAgendamentos(1));
+document.getElementById('ag-ordem').addEventListener('change', () => loadAgendamentos(1));
+document.getElementById('dt-q').addEventListener('input',     () => { clearTimeout(t3); t3 = setTimeout(renderDays, 400); });
+document.getElementById('dt-tipo').addEventListener('change',  () => renderDays());
+
+// ── INIT ──────────────────────────────────────────────────────
+inited['dashboard'] = true;
+loadDashboard();
+</script>
+</body>
+</html>
