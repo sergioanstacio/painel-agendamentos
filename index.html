@@ -928,9 +928,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (f) { const inp = document.getElementById('imp-file'); const dt = new DataTransfer(); dt.items.add(f); inp.files = dt.files; carregarArquivo(inp); }
   });
 });
-</div><!-- fim #app -->
 
-<script>
 // ── USUÁRIOS E PERFIS ────────────────────────────────────────────
 // perfil: 'admin' | 'importador' | 'consulta'
 const USUARIOS = [
@@ -1003,5 +1001,6 @@ window.addEventListener('load', () => {
   }
 });
 </script>
+</div><!-- fim #app -->
 </body>
 </html>
