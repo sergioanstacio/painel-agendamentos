@@ -280,9 +280,26 @@ tbody td { padding: 10px 14px; vertical-align: middle; }
           </table>
         </div>
       </div>
-      <div style="background:var(--amber-bg);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--amber-text);display:flex;gap:8px;align-items:flex-start;margin-bottom:16px">
-        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <span>Os <strong id="imp-old-count">—</strong> registros atuais serão apagados e substituídos pelos <strong id="imp-new-count">—</strong> novos.</span>
+      <div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">O que fazer com os dados?</div>
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;margin-bottom:8px" id="imp-label-add">
+          <input type="radio" name="imp-modo" value="add" checked onchange="atualizarModoImport()" style="margin-top:2px">
+          <div>
+            <div style="font-size:13px;font-weight:500;color:var(--text)">Adicionar aos dados existentes</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Mantém os <strong id="imp-old-count-add">—</strong> registros atuais e acrescenta os <strong id="imp-new-count-add">—</strong> novos.</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--border2);border-radius:var(--r);cursor:pointer" id="imp-label-replace">
+          <input type="radio" name="imp-modo" value="replace" onchange="atualizarModoImport()" style="margin-top:2px">
+          <div>
+            <div style="font-size:13px;font-weight:500;color:var(--text)">Substituir tudo</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">Apaga os <strong id="imp-old-count-rep">—</strong> registros atuais e insere apenas os <strong id="imp-new-count-rep">—</strong> novos.</div>
+          </div>
+        </label>
+      </div>
+      <div id="imp-warning" style="background:var(--accent-bg);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--accent-text);display:flex;gap:8px;align-items:flex-start;margin-bottom:16px">
+        <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span id="imp-warning-text">Os novos registros serão adicionados aos já existentes.</span>
       </div>
       <div style="display:flex;gap:8px">
         <button onclick="voltarStep1()" style="flex:1;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:var(--r);padding:9px;cursor:pointer;font-weight:500">Cancelar</button>
@@ -887,8 +904,14 @@ async function carregarArquivo(input) {
     headers: { ...HEADERS, 'Prefer': 'count=exact', 'Range': '0-0' }
   });
   const total = parseInt(res.headers.get('content-range')?.split('/')[1] || '0');
-  document.getElementById('imp-old-count').textContent = total;
-  document.getElementById('imp-new-count').textContent = dadosImport.length;
+  document.getElementById('imp-old-count-add').textContent = total;
+  document.getElementById('imp-new-count-add').textContent = dadosImport.length;
+  document.getElementById('imp-old-count-rep').textContent = total;
+  document.getElementById('imp-new-count-rep').textContent = dadosImport.length;
+
+  // Resetar para modo "adicionar" por padrão
+  document.querySelector('input[name="imp-modo"][value="add"]').checked = true;
+  atualizarModoImport();
 
   // Montar prévia (primeiras 4 linhas, 4 colunas)
   const cols = ['tipo','recurso','paciente','agendado_para'];
@@ -906,8 +929,29 @@ async function carregarArquivo(input) {
   document.getElementById('imp-step2').style.display = '';
 }
 
+function atualizarModoImport() {
+  const modo = document.querySelector('input[name="imp-modo"]:checked').value;
+  document.getElementById('imp-label-add').style.borderColor = modo==='add' ? 'var(--accent)' : 'var(--border2)';
+  document.getElementById('imp-label-replace').style.borderColor = modo==='replace' ? 'var(--accent)' : 'var(--border2)';
+  document.getElementById('imp-label-add').style.background = modo==='add' ? 'var(--accent-bg)' : 'transparent';
+  document.getElementById('imp-label-replace').style.background = modo==='replace' ? 'var(--accent-bg)' : 'transparent';
+
+  const old = document.getElementById('imp-old-count-add').textContent;
+  const novo = document.getElementById('imp-new-count-add').textContent;
+  const txt = document.getElementById('imp-warning-text');
+  const box = document.getElementById('imp-warning');
+  if (modo === 'add') {
+    txt.innerHTML = `Os ${novo} novos registros serão <strong>adicionados</strong> aos ${old} já existentes — total final: <strong>${(parseInt(old)||0)+(parseInt(novo)||0)}</strong>.`;
+    box.style.background = 'var(--accent-bg)'; box.style.color = 'var(--accent-text)';
+  } else {
+    txt.innerHTML = `Os <strong>${old}</strong> registros atuais serão <strong>apagados</strong> e substituídos pelos <strong>${novo}</strong> novos.`;
+    box.style.background = 'var(--amber-bg)'; box.style.color = 'var(--amber-text)';
+  }
+}
+
 async function confirmarImport() {
   if (!dadosImport.length) return;
+  const modo = document.querySelector('input[name="imp-modo"]:checked').value;
   document.getElementById('imp-step2').style.display = 'none';
   document.getElementById('imp-step3').style.display = '';
 
@@ -916,12 +960,16 @@ async function confirmarImport() {
   const setDet  = m  => document.getElementById('imp-prog-detail').textContent = m;
 
   try {
-    // 1. Apagar registros existentes
-    setMsg('Apagando dados antigos...'); setBar(10);
-    const del = await fetch(SUPA_URL + '/rest/v1/agendamentos?id=gt.0', {
-      method: 'DELETE', headers: HEADERS
-    });
-    if (!del.ok && del.status !== 404) throw new Error('Erro ao apagar: ' + del.status);
+    if (modo === 'replace') {
+      // 1. Apagar registros existentes
+      setMsg('Apagando dados antigos...'); setBar(10);
+      const del = await fetch(SUPA_URL + '/rest/v1/agendamentos?id=gt.0', {
+        method: 'DELETE', headers: HEADERS
+      });
+      if (!del.ok && del.status !== 404) throw new Error('Erro ao apagar: ' + del.status);
+    } else {
+      setMsg('Preparando para adicionar registros...'); setBar(10);
+    }
 
     // 2. Inserir em lotes de 100
     const LOTE = 100;
@@ -952,8 +1000,9 @@ async function confirmarImport() {
     // 3. Sucesso
     document.getElementById('imp-step3').style.display = 'none';
     document.getElementById('imp-step4').style.display = '';
-    document.getElementById('imp-success-msg').textContent =
-      `${inseridos} registros importados com sucesso para o Supabase.`;
+    document.getElementById('imp-success-msg').textContent = modo === 'add'
+      ? `${inseridos} novos registros adicionados com sucesso ao banco.`
+      : `${inseridos} registros importados — dados anteriores substituídos.`;
 
   } catch(err) {
     document.getElementById('imp-step3').style.display = 'none';
